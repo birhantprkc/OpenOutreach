@@ -66,6 +66,7 @@ def onboard(product_docs: str | None = None, target: str | None = None) -> None:
     config = SiteConfig.load()
     _read_files(config, product_docs, target)
     _ask_what_is_missing(config)
+    _write_back_from_environment(config)
     config.save()
 
     apply_to_environment(config)
@@ -117,6 +118,35 @@ def _ask_what_is_missing(config: SiteConfig) -> None:
 def _accepted_in_environment() -> bool:
     return os.environ.get(FINDER_ENV["accepted_legal_notice"], "").strip().lower() in {
         "1", "true", "yes", "on"}
+
+
+def _write_back_from_environment(config: SiteConfig) -> None:
+    """Copy an environment answer onto the row wherever the row itself is still blank.
+
+    The mirror image of `_answered()`: same field list, same `FINDER_ENV` /
+    `SENDER_ENV` lookup, opposite direction. An operator who answered by exporting
+    variables instead of typing at a prompt still gets those answers remembered — the
+    same promise a typed answer gets — without touching `apply_to_environment`'s
+    `setdefault`, which stays row → environment only.
+    """
+    for field in _REQUIRED:
+        if getattr(config, field):
+            continue
+        variable = FINDER_ENV.get(field) or SENDER_ENV.get(field)
+        value = os.environ.get(variable, "").strip() if variable else ""
+        if value:
+            setattr(config, field, value)
+
+    # The legal notice keeps its own single source of truth for "yes" — no duplicating
+    # that parse here — but a "yes" seen only in the environment still deserves to be
+    # remembered like every other field above.
+    if not config.accepted_legal_notice and _accepted_in_environment():
+        config.accepted_legal_notice = True
+
+    if not config.newsletter:
+        raw = os.environ.get(FINDER_ENV["newsletter"], "").strip().lower()
+        if raw in {"1", "true", "yes", "on"}:
+            config.newsletter = True
 
 
 def _ask_campaign(config: SiteConfig) -> None:

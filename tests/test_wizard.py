@@ -138,6 +138,75 @@ class TestWhatItAsksFor:
             wizard._ask_what_is_missing(config)
 
 
+class TestWritingEnvironmentAnswersBack:
+    """An agent that answers by exporting, not typing, still gets remembered once."""
+
+    def test_an_env_only_answer_is_present_on_the_saved_row(self, db, monkeypatch):
+        config = SiteConfig.load()
+        for field, value in ANSWERS.items():
+            if field != "bettercontact_api_key":
+                setattr(config, field, value)
+        monkeypatch.setenv("OPENOUTFIND_BETTERCONTACT_API_KEY", "from-the-agent")
+
+        wizard._write_back_from_environment(config)
+
+        assert config.bettercontact_api_key == "from-the-agent"
+
+    def test_the_legal_notice_and_newsletter_are_written_back_too(self, db, monkeypatch):
+        config = SiteConfig.load()
+        for field, value in ANSWERS.items():
+            if field not in {"accepted_legal_notice"}:
+                setattr(config, field, value)
+        monkeypatch.setenv("OPENOUTFIND_ACCEPT_LEGAL_NOTICE", "true")
+        monkeypatch.setenv("OPENOUTFIND_NEWSLETTER", "true")
+
+        wizard._write_back_from_environment(config)
+
+        assert config.accepted_legal_notice is True
+        assert config.newsletter is True
+
+    def test_a_second_onboard_with_the_export_removed_does_not_ask_again(
+        self, db, monkeypatch
+    ):
+        config = SiteConfig.load()
+        for field, value in ANSWERS.items():
+            if field != "bettercontact_api_key":
+                setattr(config, field, value)
+        monkeypatch.setenv("OPENOUTFIND_BETTERCONTACT_API_KEY", "from-the-agent")
+        wizard._write_back_from_environment(config)
+        config.save()
+
+        monkeypatch.delenv("OPENOUTFIND_BETTERCONTACT_API_KEY")
+        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        monkeypatch.setattr(wizard, "_ask", _refuse)
+        monkeypatch.setattr(wizard, "_ask_secret", _refuse)
+
+        wizard._ask_what_is_missing(SiteConfig.load())  # must not prompt
+
+    def test_write_back_never_overrules_a_value_already_on_the_row(self, db, monkeypatch):
+        config = SiteConfig.load()
+        for field, value in ANSWERS.items():
+            setattr(config, field, value)
+        monkeypatch.setenv("OPENOUTFIND_BETTERCONTACT_API_KEY", "different-from-the-row")
+
+        wizard._write_back_from_environment(config)
+
+        assert config.bettercontact_api_key == ANSWERS["bettercontact_api_key"]
+
+    def test_apply_to_environment_still_lets_an_export_win_for_this_run(
+        self, configured, monkeypatch
+    ):
+        """`apply_to_environment`'s `setdefault` is untouched by the write-back."""
+        monkeypatch.setenv("OUTSEND_PRODUCT_DOCS", "What the unit file says.")
+
+        wizard._write_back_from_environment(configured)
+        wizard.apply_to_environment(configured)
+
+        import os
+        assert os.environ["OUTSEND_PRODUCT_DOCS"] == "What the unit file says."
+        assert configured.product_docs == ANSWERS["product_docs"]
+
+
 class TestTheNewsletterDefault:
     """Jurisdiction-aware: no opt-in-marketing law, no question."""
 
