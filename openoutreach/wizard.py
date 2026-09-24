@@ -31,8 +31,6 @@ from pathlib import Path
 
 from openoutreach.config.models import FINDER_ENV, SENDER_ENV, SiteConfig
 
-LEGAL_NOTICE_URL = "https://github.com/eracle/OpenOutreach/blob/main/LEGAL_NOTICE.md"
-
 BETTERCONTACT_SIGNUP_URL = "https://bettercontact.rocks?fpr=openoutreach"
 
 _INTRO = """
@@ -94,30 +92,18 @@ def _ask_what_is_missing(config: SiteConfig) -> None:
     across all three programs: whatever a person is asked here, an agent sets there.
     """
     missing = [field for field in _REQUIRED if not _answered(config, field)]
-    # The notice is a record of something a person agreed to, so an environment that
-    # already says yes is that person having said it somewhere else — the same reading
-    # the children give it.
-    accepted = config.accepted_legal_notice or _accepted_in_environment()
-    if not missing and accepted:
+    if not missing:
         return
 
     if not sys.stdin.isatty():
-        unanswered = list(missing) if accepted else [*missing, "accepted_legal_notice"]
         raise SystemExit(
             "error: onboarding_incomplete: nobody to ask, and this install has not been "
-            "told: " + ", ".join(_variables_for(unanswered)))
+            "told: " + ", ".join(_variables_for(missing)))
 
     _say(_INTRO)
     for field in missing:
         _ASK[field](config)
-    if not accepted:
-        config.accepted_legal_notice = _accept_the_legal_notice()
-        config.newsletter = _newsletter_default(config)
-
-
-def _accepted_in_environment() -> bool:
-    return os.environ.get(FINDER_ENV["accepted_legal_notice"], "").strip().lower() in {
-        "1", "true", "yes", "on"}
+    config.newsletter = _newsletter_default(config)
 
 
 def _write_back_from_environment(config: SiteConfig) -> None:
@@ -136,12 +122,6 @@ def _write_back_from_environment(config: SiteConfig) -> None:
         value = os.environ.get(variable, "").strip() if variable else ""
         if value:
             setattr(config, field, value)
-
-    # The legal notice keeps its own single source of truth for "yes" — no duplicating
-    # that parse here — but a "yes" seen only in the environment still deserves to be
-    # remembered like every other field above.
-    if not config.accepted_legal_notice and _accepted_in_environment():
-        config.accepted_legal_notice = True
 
     if not config.newsletter:
         raw = os.environ.get(FINDER_ENV["newsletter"], "").strip().lower()
@@ -285,14 +265,6 @@ def _newsletter_default(config: SiteConfig) -> bool:
     if not is_gdpr_protected(config.operator_country_code):
         return True
     return _confirm("Subscribe to the OpenOutreach newsletter?")
-
-
-def _accept_the_legal_notice() -> bool:
-    """Gate onboarding on the Legal Notice; re-ask a decline rather than proceeding."""
-    while True:
-        if _confirm(f"Do you accept the Legal Notice? ({LEGAL_NOTICE_URL})"):
-            return True
-        _say("  You must accept the Legal Notice to use OpenOutreach.")
 
 
 # ── handing it over ──────────────────────────────────────────────

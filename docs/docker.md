@@ -27,7 +27,7 @@ docker run --pull always -it -v ~/.openoutreach/data:/app/data \
   redirect it, and note that it carries every lead in the store, so the newest file supersedes the last.
 - `-it` is only needed for the **interactive onboarding** on first run — product/objective → LLM key →
   BetterContact key → who you are and your country → the mailbox and its app password →
-  newsletter/legal. Pass those as `OPENOUTFIND_*` / `OUTSEND_*` environment variables instead
+  newsletter. Pass those as `OPENOUTFIND_*` / `OUTSEND_*` environment variables instead
   (`--env-file` is the usual way) and the container needs no TTY at all: a question whose variable
   is already set is not asked. Missing something with no TTY, it exits naming the variables rather
   than hanging on a prompt. Do not pass `-t` when redirecting: a TTY makes stdout and

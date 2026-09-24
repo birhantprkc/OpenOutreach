@@ -52,7 +52,7 @@ headless setup possible:
 | campaign | `OPENOUTFIND_PRODUCT_DOCS`, `OPENOUTFIND_CAMPAIGN_TARGET` |
 | llm | `OPENOUTFIND_AI_MODEL`, `OPENOUTFIND_LLM_API_KEY` |
 | bettercontact | `OPENOUTFIND_BETTERCONTACT_API_KEY` |
-| account | `OPENOUTFIND_OPERATOR_EMAIL`, `OPENOUTFIND_OPERATOR_COUNTRY`, `OPENOUTFIND_ACCEPT_LEGAL_NOTICE` |
+| account | `OPENOUTFIND_OPERATOR_EMAIL`, `OPENOUTFIND_OPERATOR_COUNTRY` |
 | the sender | `OUTSEND_OPERATOR_NAME` (who signs the mail), `OUTSEND_MAILBOX_ADDRESS`, `OUTSEND_MAILBOX_PASSWORD` (the provider's **app password**), optional `OUTSEND_BOOKING_LINK` |
 
 **A variable you export is an answer already given**, and the wizard skips that question rather than
@@ -68,9 +68,7 @@ shell-quoted strings — quoting a markdown paragraph on a command line corrupts
 openoutreach init --product-docs product.md --target target.md
 ```
 
-**Never accept the legal notice on the user's behalf.** If `OPENOUTFIND_ACCEPT_LEGAL_NOTICE` is
-unset, say so and let them set it; do not export it yourself. The same goes for the mailbox
-credentials: ask, never guess.
+**Never guess the mailbox credentials** — ask the user for them.
 
 **`init` is the only verb that asks.** `find` creates the database if it has to, but it never
 prompts: given an unconfigured install it stops with `onboarding_incomplete`, naming every variable

@@ -18,7 +18,6 @@ ANSWERS = dict(
     operator_name="Ada Lovelace",
     operator_email="ada@example.com",
     operator_country_code="us",
-    accepted_legal_notice=True,
     mailbox_address="ada@example.com",
     mailbox_password="app-password",
 )
@@ -70,11 +69,13 @@ class TestTheExport:
         assert "OUTSEND_SMTP_HOST" not in environment
         assert "OUTSEND_BOOKING_LINK" not in environment
 
-    def test_the_two_gates_export_as_words_the_children_accept(self, configured):
+    def test_a_boolean_exports_as_a_word(self, configured):
         environment = configured.export()
 
-        assert environment["OPENOUTFIND_ACCEPT_LEGAL_NOTICE"] == "true"
         assert environment["OPENOUTFIND_NEWSLETTER"] == "false"
+
+    def test_no_legal_notice_flag_is_exported(self, configured):
+        assert "OPENOUTFIND_ACCEPT_LEGAL_NOTICE" not in configured.export()
 
 
 class TestApplyingIt:
@@ -114,7 +115,7 @@ class TestWhatItAsksFor:
         message = str(raised.value)
         assert "OPENOUTFIND_PRODUCT_DOCS" in message
         assert "OUTSEND_MAILBOX_ADDRESS" in message
-        assert "OPENOUTFIND_ACCEPT_LEGAL_NOTICE" in message
+        assert "OPENOUTFIND_ACCEPT_LEGAL_NOTICE" not in message
 
     def test_a_variable_already_exported_is_not_asked_for_again(self, db, monkeypatch):
         """Being told is being told, whichever way round it happened."""
@@ -126,16 +127,6 @@ class TestWhatItAsksFor:
         monkeypatch.setattr("sys.stdin.isatty", lambda: False)
 
         wizard._ask_what_is_missing(config)  # must not raise
-
-    def test_the_legal_notice_is_not_carried_by_a_row_that_never_accepted_it(self, db, monkeypatch):
-        config = SiteConfig.load()
-        for field, value in ANSWERS.items():
-            setattr(config, field, value)
-        config.accepted_legal_notice = False
-        monkeypatch.setattr("sys.stdin.isatty", lambda: False)
-
-        with pytest.raises(SystemExit, match="ACCEPT_LEGAL_NOTICE"):
-            wizard._ask_what_is_missing(config)
 
 
 class TestWritingEnvironmentAnswersBack:
@@ -152,17 +143,14 @@ class TestWritingEnvironmentAnswersBack:
 
         assert config.bettercontact_api_key == "from-the-agent"
 
-    def test_the_legal_notice_and_newsletter_are_written_back_too(self, db, monkeypatch):
+    def test_the_newsletter_is_written_back_too(self, db, monkeypatch):
         config = SiteConfig.load()
         for field, value in ANSWERS.items():
-            if field not in {"accepted_legal_notice"}:
-                setattr(config, field, value)
-        monkeypatch.setenv("OPENOUTFIND_ACCEPT_LEGAL_NOTICE", "true")
+            setattr(config, field, value)
         monkeypatch.setenv("OPENOUTFIND_NEWSLETTER", "true")
 
         wizard._write_back_from_environment(config)
 
-        assert config.accepted_legal_notice is True
         assert config.newsletter is True
 
     def test_a_second_onboard_with_the_export_removed_does_not_ask_again(

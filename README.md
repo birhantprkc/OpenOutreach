@@ -92,8 +92,7 @@ This repo ships a **Claude Code plugin**, so you can pull leads without leaving 
 
 The skill (`skills/find-leads/SKILL.md`) teaches Claude when to run `find`, which flags cost credits
 and which cannot, how to read the CSV on stdout, and what each `error: <type>` means. It never buys
-an address you did not ask for, never sends without being asked, and never accepts the legal notice
-for you. Prefer skills to plugins? Copy `skills/find-leads/` into `~/.claude/skills/` instead.
+an address you did not ask for, and never sends without being asked. Prefer skills to plugins? Copy `skills/find-leads/` into `~/.claude/skills/` instead.
 
 **Not on Claude Code?** The skill is a markdown file describing the CLI's own contract — nothing
 Claude-specific is required to use `openoutreach` itself. Codex, Cursor, or any other agent can call

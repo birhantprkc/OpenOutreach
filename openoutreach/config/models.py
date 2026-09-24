@@ -36,7 +36,6 @@ FINDER_ENV = {
     "operator_email": "OPENOUTFIND_OPERATOR_EMAIL",
     "operator_country_code": "OPENOUTFIND_OPERATOR_COUNTRY",
     "contacts_api_token": "OPENOUTFIND_CONTACTS_API_TOKEN",
-    "accepted_legal_notice": "OPENOUTFIND_ACCEPT_LEGAL_NOTICE",
     "newsletter": "OPENOUTFIND_NEWSLETTER",
 }
 
@@ -95,9 +94,6 @@ class SiteConfig(models.Model):
     operator_email = models.EmailField(blank=True, default="")
     # ISO-3166 alpha-2 — the operator's *jurisdiction*, not a target market.
     operator_country_code = models.CharField(max_length=2, blank=True, default="")
-    # An acceptance somebody gave is a record. It is kept because it was given, and the
-    # children are told about it on every run because they keep nothing.
-    accepted_legal_notice = models.BooleanField(default=False)
     # Consent, and never a default: silence is not a yes in any jurisdiction.
     newsletter = models.BooleanField(default=False)
 
@@ -141,7 +137,7 @@ class SiteConfig(models.Model):
         A blank field exports nothing at all rather than an empty string: to a child,
         unset means *use your default* (the sender's SMTP host, the finder's hub URL),
         while a blank value means the operator asked for nothing there. Booleans go as
-        `true`/`false`, the only spellings the finder's gate accepts either way.
+        `true`/`false`.
         """
         environment = {}
         # The two maps are walked separately, never merged: they are keyed by *field*,
